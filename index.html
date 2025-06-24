@@ -1,265 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pidmetannya</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pidmetannya with Firebase</title>
 
-    header {
-      background: #4CAF50;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-    }
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-    .login-box, .dashboard {
-      max-width: 400px;
-      margin: 30px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #4CAF50;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .admin-panel {
-      background: #f9f9f9;
-      padding: 15px;
-      margin-top: 20px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    .user-item {
-      margin-bottom: 15px;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .history-box {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-top: 10px;
-      padding: 10px;
-      background: #fff;
-    }
-
-    .history-log {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-top: 10px;
-    }
-
-    .history-log div {
-      padding: 5px;
-      background: #f0f0f0;
-      border-radius: 5px;
-      text-align: center;
-    }
-
-    .history-controls {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    footer {
-      text-align: center;
-      color: #888;
-      font-size: 14px;
-      padding: 10px;
-    }
-  </style>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; max-width: 480px; margin: auto; }
+  h1 { text-align: center; }
+  .login, .user-list, .history-section { margin-top: 20px; }
+  label, input { display: block; margin: 5px 0; width: 100%; font-size: 16px; }
+  button { font-size: 18px; margin: 5px 5px 5px 0; padding: 8px 12px; }
+  ul { list-style: none; padding-left: 0; }
+  li { margin: 5px 0; font-size: 18px; }
+  .user-item { margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+  .admin-label { font-weight: bold; color: red; }
+</style>
 </head>
 <body>
 
-  <header>Pidmetannya</header>
+<h1>Pidmetannya</h1>
 
-  <div class="login-box" id="loginBox">
-    <h2>Login</h2>
-    <input type="text" id="nickname" placeholder="Nickname">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p id="error" style="color:red;"></p>
-  </div>
+<div class="login" id="loginDiv">
+  <h2>Login</h2>
+  <label>Nickname: <input type="text" id="nicknameInput" /></label>
+  <label>Password: <input type="password" id="passwordInput" /></label>
+  <button onclick="login()">Login</button>
+  <p id="loginError" style="color:red;"></p>
+</div>
 
-  <div class="dashboard" id="dashboard" style="display: none;">
-    <h2>Welcome, <span id="userDisplay"></span>!</h2>
+<div class="user-list" id="userListDiv" style="display:none;">
+  <h2>Users</h2>
+  <div id="usersContainer"></div>
+  <button onclick="logout()">Logout</button>
+</div>
 
-    <div class="admin-panel" id="adminPanel" style="display: none;">
-      <h3>Admin Panel</h3>
-      <div id="adminUserList"></div>
-    </div>
+<div class="history-section" id="historyDiv" style="display:none;">
+  <h2>History for <span id="currentUserName"></span></h2>
+  <button onclick="addMark('+')">+</button>
+  <button onclick="addMark('-')">−</button>
+  <ul id="historyList"></ul>
+</div>
 
-    <div id="userList">
-      <h3>All Users</h3>
-      <div class="user-info" id="userListDisplay"></div>
-    </div>
-  </div>
+<script>
+  // ---- Firebase Config ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyAdCQbwBXO2htS1yGAb-MbCcmg6Gh7QzkY",
+    authDomain: "pidmetania.firebaseapp.com",
+    databaseURL: "https://pidmetania-default-rtdb.firebaseio.com",
+    projectId: "pidmetania",
+    storageBucket: "pidmetania.firebasestorage.app",
+    messagingSenderId: "157835623349",
+    appId: "1:157835623349:web:ac15076f8cb13501c377fc"
+  };
 
-  <footer>&copy; 2025 Pidmetannya</footer>
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-  <script>
-    let users = [
-      { nickname: "Elya", password: "1234", role: "user", history: [] },
-      { nickname: "Vilou", password: "5678", role: "user", history: [] },
-      { nickname: "Seva", password: "0107", role: "admin", history: [] }
-    ];
+  // ---- Аккаунти ----
+  const accounts = {
+    "Elya": { password: "1234", isAdmin: false },
+    "Vilou": { password: "5678", isAdmin: false },
+    "Seva": { password: "0107", isAdmin: true } // адмін, але не показуємо "admin"
+  };
 
-    let currentUser = null;
+  let loggedInUser = null;
+  let viewingUser = null;
 
-    function login() {
-      const nick = document.getElementById("nickname").value.trim();
-      const pass = document.getElementById("password").value.trim();
-      const errorBox = document.getElementById("error");
+  // ---- Логін ----
+  function login() {
+    const nick = document.getElementById("nicknameInput").value.trim();
+    const pass = document.getElementById("passwordInput").value.trim();
+    const errorEl = document.getElementById("loginError");
 
-      const user = users.find(u => u.nickname === nick && u.password === pass);
-      if (!user) {
-        errorBox.textContent = "Invalid credentials!";
-        return;
-      }
-
-      currentUser = user;
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      document.getElementById("userDisplay").textContent = user.nickname;
-
-      showUserList();
-
-      if (user.role === "admin") {
-        document.getElementById("adminPanel").style.display = "block";
-        showAdminEditor();
-      }
+    if (!accounts[nick]) {
+      errorEl.textContent = "User not found";
+      return;
+    }
+    if (accounts[nick].password !== pass) {
+      errorEl.textContent = "Wrong password";
+      return;
     }
 
-    function showUserList() {
-      const display = document.getElementById("userListDisplay");
-      display.innerHTML = "";
+    loggedInUser = nick;
+    errorEl.textContent = "";
+    document.getElementById("loginDiv").style.display = "none";
+    document.getElementById("userListDiv").style.display = "block";
 
-      users.forEach(u => {
-        const div = document.createElement("div");
-        div.className = "user-item";
+    renderUsers();
+  }
 
-        const name = document.createElement("div");
-        name.textContent = u.nickname;
+  // ---- Вихід ----
+  function logout() {
+    loggedInUser = null;
+    viewingUser = null;
+    document.getElementById("loginDiv").style.display = "block";
+    document.getElementById("userListDiv").style.display = "none";
+    document.getElementById("historyDiv").style.display = "none";
+    document.getElementById("nicknameInput").value = "";
+    document.getElementById("passwordInput").value = "";
+  }
 
-        const historyBtn = document.createElement("button");
-        historyBtn.textContent = "History Pidmetannya";
+  // ---- Відобразити список користувачів ----
+  function renderUsers() {
+    const container = document.getElementById("usersContainer");
+    container.innerHTML = "";
 
-        const historyBox = document.createElement("div");
-        historyBox.className = "history-box";
-        historyBox.style.display = "none";
+    for (const nick in accounts) {
+      const user = accounts[nick];
 
-        const log = document.createElement("div");
-        log.className = "history-log";
-        u.history.forEach(entry => {
-          const row = document.createElement("div");
-          row.textContent = entry;
-          log.appendChild(row);
-        });
+      const div = document.createElement("div");
+      div.className = "user-item";
 
-        const controls = document.createElement("div");
-        controls.className = "history-controls";
+      // Відображаємо ніки (без слова "admin" для Seva)
+      const userLabel = document.createElement("span");
+      userLabel.textContent = nick + (user.isAdmin && nick !== "Seva" ? " (admin)" : "");
+      div.appendChild(userLabel);
 
-        const btnPlus = document.createElement("button");
-        btnPlus.textContent = "+";
-        btnPlus.onclick = () => {
-          u.history.push("+");
-          showUserList();
-        };
+      // Кнопка "View History"
+      const viewBtn = document.createElement("button");
+      viewBtn.textContent = "History Pidmetannya";
+      viewBtn.onclick = () => openHistory(nick);
+      div.appendChild(viewBtn);
 
-        const btnMinus = document.createElement("button");
-        btnMinus.textContent = "-";
-        btnMinus.onclick = () => {
-          u.history.push("-");
-          showUserList();
-        };
-
-        if (currentUser.role === "admin") {
-          controls.appendChild(btnPlus);
-          controls.appendChild(btnMinus);
-        }
-
-        historyBox.appendChild(log);
-        historyBox.appendChild(controls);
-
-        div.appendChild(name);
-        div.appendChild(historyBtn);
-        div.appendChild(historyBox);
-        display.appendChild(div);
-
-        historyBtn.historyBox = historyBox;
-        historyBtn.onclick = () => {
-          historyBox.style.display = historyBox.style.display === "none" ? "block" : "none";
-        };
-      });
-    }
-
-    function showAdminEditor() {
-      const container = document.getElementById("adminUserList");
-      container.innerHTML = "";
-
-      users.forEach((user, index) => {
-        if (user.nickname === "Seva") return;
-
-        const div = document.createElement("div");
-        div.className = "user-item";
-
+      // Адмін може міняти ніки і паролі
+      if (accounts[loggedInUser].isAdmin) {
+        // Поле для зміни ніку
         const nickInput = document.createElement("input");
-        nickInput.value = user.nickname;
-
-        const passInput = document.createElement("input");
-        passInput.type = "text";
-        passInput.value = user.password;
-
-        const saveBtn = document.createElement("button");
-        saveBtn.textContent = "Save";
-        saveBtn.onclick = () => {
-          users[index].nickname = nickInput.value.trim();
-          users[index].password = passInput.value.trim();
-          showUserList();
-          alert("User updated!");
-        };
-
-        div.appendChild(document.createTextNode("Nickname:"));
+        nickInput.value = nick;
+        nickInput.style.marginLeft = "10px";
+        nickInput.onchange = () => changeNickname(nick, nickInput.value);
         div.appendChild(nickInput);
-        div.appendChild(document.createTextNode("Password:"));
-        div.appendChild(passInput);
-        div.appendChild(saveBtn);
 
-        container.appendChild(div);
-      });
+        // Поле для зміни пароля
+        const passInput = document.createElement("input");
+        passInput.type = "password";
+        passInput.placeholder = "New password";
+        passInput.style.marginLeft = "5px";
+        passInput.onchange = () => changePassword(nick, passInput.value);
+        div.appendChild(passInput);
+      }
+
+      container.appendChild(div);
     }
-  </script>
+  }
+
+  // ---- Змінити ніки (проста логіка) ----
+  function changeNickname(oldNick, newNick) {
+    if (!newNick || newNick === oldNick || accounts[newNick]) {
+      alert("Invalid or existing nickname");
+      renderUsers();
+      return;
+    }
+    accounts[newNick] = accounts[oldNick];
+    delete accounts[oldNick];
+
+    // Також можна перенести історію у Firebase, якщо хочеш
+    // Але це складніше — поки просто оновлюємо локально
+    renderUsers();
+  }
+
+  // ---- Змінити пароль ----
+  function changePassword(nick, newPass) {
+    if (!newPass) {
+      alert("Password cannot be empty");
+      return;
+    }
+    accounts[nick].password = newPass;
+  }
+
+  // ---- Відкрити історію користувача ----
+  function openHistory(nick) {
+    viewingUser = nick;
+    document.getElementById("currentUserName").textContent = nick;
+    document.getElementById("historyDiv").style.display = "block";
+    loadHistory(nick);
+  }
+
+  // ---- Додати "+" або "−" ----
+  function addMark(mark) {
+    if (!viewingUser) return;
+    const timestamp = Date.now();
+    db.ref('users/' + viewingUser + '/marks/' + timestamp).set(mark);
+  }
+
+  // ---- Підвантажити історію з Firebase і оновити список ----
+  function loadHistory(nick) {
+    const historyList = document.getElementById("historyList");
+    db.ref('users/' + nick + '/marks').on('value', snapshot => {
+      const data = snapshot.val();
+      historyList.innerHTML = "";
+      if (data) {
+        const sortedKeys = Object.keys(data).sort();
+        sortedKeys.forEach(key => {
+          const li = document.createElement("li");
+          li.textContent = data[key];
+          historyList.appendChild(li);
+        });
+      }
+    });
+  }
+</script>
 
 </body>
 </html>
