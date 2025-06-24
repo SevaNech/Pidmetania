@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pidmetannya</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .login-box, .dashboard {
+      max-width: 400px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .admin-panel {
+      background: #f9f9f9;
+      padding: 15px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .user-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .history-box {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .history-log {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .history-log div {
+      padding: 5px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      text-align: center;
+    }
+
+    .history-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    footer {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>Pidmetannya</header>
+
+  <div class="login-box" id="loginBox">
+    <h2>Login</h2>
+    <input type="text" id="nickname" placeholder="Nickname">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="error" style="color:red;"></p>
+  </div>
+
+  <div class="dashboard" id="dashboard" style="display: none;">
+    <h2>Welcome, <span id="userDisplay"></span>!</h2>
+
+    <div class="admin-panel" id="adminPanel" style="display: none;">
+      <h3>Admin Panel</h3>
+      <div id="adminUserList"></div>
+    </div>
+
+    <div id="userList">
+      <h3>All Users</h3>
+      <div class="user-info" id="userListDisplay"></div>
+    </div>
+  </div>
+
+  <footer>&copy; 2025 Pidmetannya</footer>
+
+  <script>
+    let users = [
+      { nickname: "Elya", password: "1234", role: "user", history: [] },
+      { nickname: "Vilou", password: "5678", role: "user", history: [] },
+      { nickname: "Seva", password: "0107", role: "admin", history: [] }
+    ];
+
+    let currentUser = null;
+
+    function login() {
+      const nick = document.getElementById("nickname").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const errorBox = document.getElementById("error");
+
+      const user = users.find(u => u.nickname === nick && u.password === pass);
+      if (!user) {
+        errorBox.textContent = "Invalid credentials!";
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("userDisplay").textContent = user.nickname;
+
+      showUserList();
+
+      if (user.role === "admin") {
+        document.getElementById("adminPanel").style.display = "block";
+        showAdminEditor();
+      }
+    }
+
+    function showUserList() {
+      const display = document.getElementById("userListDisplay");
+      display.innerHTML = "";
+
+      users.forEach(u => {
+        const div = document.createElement("div");
+        div.className = "user-item";
+
+        const name = document.createElement("div");
+        name.textContent = u.nickname;
+
+        const historyBtn = document.createElement("button");
+        historyBtn.textContent = "History Pidmetannya";
+
+        const historyBox = document.createElement("div");
+        historyBox.className = "history-box";
+        historyBox.style.display = "none";
+
+        const log = document.createElement("div");
+        log.className = "history-log";
+        u.history.forEach(entry => {
+          const row = document.createElement("div");
+          row.textContent = entry;
+          log.appendChild(row);
+        });
+
+        const controls = document.createElement("div");
+        controls.className = "history-controls";
+
+        const btnPlus = document.createElement("button");
+        btnPlus.textContent = "+";
+        btnPlus.onclick = () => {
+          u.history.push("+");
+          showUserList();
+        };
+
+        const btnMinus = document.createElement("button");
+        btnMinus.textContent = "-";
+        btnMinus.onclick = () => {
+          u.history.push("-");
+          showUserList();
+        };
+
+        if (currentUser.role === "admin") {
+          controls.appendChild(btnPlus);
+          controls.appendChild(btnMinus);
+        }
+
+        historyBox.appendChild(log);
+        historyBox.appendChild(controls);
+
+        div.appendChild(name);
+        div.appendChild(historyBtn);
+        div.appendChild(historyBox);
+        display.appendChild(div);
+
+        historyBtn.historyBox = historyBox;
+        historyBtn.onclick = () => {
+          historyBox.style.display = historyBox.style.display === "none" ? "block" : "none";
+        };
+      });
+    }
+
+    function showAdminEditor() {
+      const container = document.getElementById("adminUserList");
+      container.innerHTML = "";
+
+      users.forEach((user, index) => {
+        if (user.nickname === "Seva") return;
+
+        const div = document.createElement("div");
+        div.className = "user-item";
+
+        const nickInput = document.createElement("input");
+        nickInput.value = user.nickname;
+
+        const passInput = document.createElement("input");
+        passInput.type = "text";
+        passInput.value = user.password;
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save";
+        saveBtn.onclick = () => {
+          users[index].nickname = nickInput.value.trim();
+          users[index].password = passInput.value.trim();
+          showUserList();
+          alert("User updated!");
+        };
+
+        div.appendChild(document.createTextNode("Nickname:"));
+        div.appendChild(nickInput);
+        div.appendChild(document.createTextNode("Password:"));
+        div.appendChild(passInput);
+        div.appendChild(saveBtn);
+
+        container.appendChild(div);
+      });
+    }
+  </script>
+
+</body>
+</html>
