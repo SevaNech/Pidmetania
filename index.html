@@ -10,45 +10,199 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; max-width: 480px; margin: auto; }
-  h1 { text-align: center; }
-  .login, .user-list, .history-section { margin-top: 20px; }
-  label, input { display: block; margin: 5px 0; width: 100%; font-size: 16px; }
-  button { font-size: 18px; margin: 5px 5px 5px 0; padding: 8px 12px; }
-  ul { list-style: none; padding-left: 0; }
-  li { margin: 5px 0; font-size: 18px; }
-  .user-item { margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-  .admin-label { font-weight: bold; color: red; }
+  /* Reset some default styles */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
+    color: #333;
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  main {
+    background: white;
+    max-width: 480px;
+    width: 100%;
+    padding: 30px 40px;
+    margin: 40px 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  }
+  h1, h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #222;
+  }
+  .login label, .login input {
+    display: block;
+    width: 100%;
+  }
+  .login label {
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .login input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #ccc;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    outline-offset: 2px;
+  }
+  .login input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 5px rgba(79,70,229,0.5);
+  }
+  button {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 15px;
+    user-select: none;
+  }
+  button:hover:not(:disabled) {
+    background: #4338ca;
+  }
+  button:disabled {
+    background: #a5b4fc;
+    cursor: not-allowed;
+  }
+  #loginError {
+    color: #e11d48;
+    margin-top: 10px;
+    font-weight: 600;
+    min-height: 20px;
+    text-align: center;
+  }
+  .user-list, .history-section {
+    margin-top: 30px;
+  }
+  .user-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    background: #f9fafb;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .user-info {
+    font-weight: 600;
+    font-size: 18px;
+    color: #1e293b;
+  }
+  .user-info.admin-label {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 8px;
+    font-size: 14px;
+    font-style: italic;
+  }
+  .user-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .user-controls input[type="text"],
+  .user-controls input[type="password"] {
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    width: 120px;
+    transition: border-color 0.3s ease;
+  }
+  .user-controls input[type="text"]:focus,
+  .user-controls input[type="password"]:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 5px rgba(79,70,229,0.5);
+    outline: none;
+  }
+  .history-section button {
+    width: 70px;
+    font-size: 28px;
+    margin-right: 15px;
+    border-radius: 50%;
+    font-weight: 700;
+    padding: 8px 0;
+    line-height: 1;
+    user-select: none;
+  }
+  #historyList {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-left: 0;
+  }
+  #historyList li {
+    list-style: none;
+    background: #e0e7ff;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 20px;
+    text-align: center;
+    font-weight: 600;
+    color: #3730a3;
+  }
+  @media (max-width: 480px) {
+    main {
+      padding: 20px 20px;
+      margin: 20px 10px;
+    }
+    .user-controls input[type="text"],
+    .user-controls input[type="password"] {
+      width: 100px;
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+  }
 </style>
 </head>
 <body>
+<main>
+  <h1>Pidmetannya</h1>
 
-<h1>Pidmetannya</h1>
+  <div class="login" id="loginDiv">
+    <h2>Login</h2>
+    <label for="nicknameInput">Nickname:</label>
+    <input type="text" id="nicknameInput" placeholder="Enter nickname" />
+    <label for="passwordInput">Password:</label>
+    <input type="password" id="passwordInput" placeholder="Enter password" />
+    <button id="loginBtn" onclick="login()">Login</button>
+    <p id="loginError"></p>
+  </div>
 
-<div class="login" id="loginDiv">
-  <h2>Login</h2>
-  <label>Nickname: <input type="text" id="nicknameInput" /></label>
-  <label>Password: <input type="password" id="passwordInput" /></label>
-  <button onclick="login()">Login</button>
-  <p id="loginError" style="color:red;"></p>
-</div>
+  <div class="user-list" id="userListDiv" style="display:none;">
+    <h2>Users</h2>
+    <div id="usersContainer"></div>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-<div class="user-list" id="userListDiv" style="display:none;">
-  <h2>Users</h2>
-  <div id="usersContainer"></div>
-  <button onclick="logout()">Logout</button>
-</div>
-
-<div class="history-section" id="historyDiv" style="display:none;">
-  <h2>History for <span id="currentUserName"></span></h2>
-  <button onclick="addMark('+')">+</button>
-  <button onclick="addMark('-')">−</button>
-  <ul id="historyList"></ul>
-</div>
+  <div class="history-section" id="historyDiv" style="display:none;">
+    <h2>History for <span id="currentUserName"></span></h2>
+    <button onclick="addMark('+')" aria-label="Add plus">+</button>
+    <button onclick="addMark('-')" aria-label="Add minus">?</button>
+    <ul id="historyList"></ul>
+  </div>
+</main>
 
 <script>
   // ---- Firebase Config ----
-  const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyAdCQbwBXO2htS1yGAb-MbCcmg6Gh7QzkY",
     authDomain: "pidmetania.firebaseapp.com",
     databaseURL: "https://pidmetania-default-rtdb.firebaseio.com",
@@ -61,17 +215,16 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // ---- Аккаунти ----
+  // ---- Accounts ----
   const accounts = {
     "Elya": { password: "1234", isAdmin: false },
     "Vilou": { password: "5678", isAdmin: false },
-    "Seva": { password: "0107", isAdmin: true } // адмін, але не показуємо "admin"
+    "Seva": { password: "0107", isAdmin: true } // admin but no label shown
   };
 
   let loggedInUser = null;
   let viewingUser = null;
 
-  // ---- Логін ----
   function login() {
     const nick = document.getElementById("nicknameInput").value.trim();
     const pass = document.getElementById("passwordInput").value.trim();
@@ -90,11 +243,11 @@
     errorEl.textContent = "";
     document.getElementById("loginDiv").style.display = "none";
     document.getElementById("userListDiv").style.display = "block";
+    document.getElementById("historyDiv").style.display = "none";
 
     renderUsers();
   }
 
-  // ---- Вихід ----
   function logout() {
     loggedInUser = null;
     viewingUser = null;
@@ -103,9 +256,9 @@
     document.getElementById("historyDiv").style.display = "none";
     document.getElementById("nicknameInput").value = "";
     document.getElementById("passwordInput").value = "";
+    document.getElementById("loginError").textContent = "";
   }
 
-  // ---- Відобразити список користувачів ----
   function renderUsers() {
     const container = document.getElementById("usersContainer");
     container.innerHTML = "";
@@ -116,40 +269,48 @@
       const div = document.createElement("div");
       div.className = "user-item";
 
-      // Відображаємо ніки (без слова "admin" для Seva)
-      const userLabel = document.createElement("span");
-      userLabel.textContent = nick + (user.isAdmin && nick !== "Seva" ? " (admin)" : "");
-      div.appendChild(userLabel);
+      const userInfo = document.createElement("div");
+      userInfo.className = "user-info";
+      userInfo.textContent = nick;
+      if (user.isAdmin && nick !== "Seva") {
+        const adminLabel = document.createElement("span");
+        adminLabel.className = "admin-label";
+        adminLabel.textContent = "admin";
+        userInfo.appendChild(adminLabel);
+      }
+      div.appendChild(userInfo);
 
-      // Кнопка "View History"
+      const controls = document.createElement("div");
+      controls.className = "user-controls";
+
       const viewBtn = document.createElement("button");
       viewBtn.textContent = "History Pidmetannya";
       viewBtn.onclick = () => openHistory(nick);
-      div.appendChild(viewBtn);
+      controls.appendChild(viewBtn);
 
-      // Адмін може міняти ніки і паролі
       if (accounts[loggedInUser].isAdmin) {
-        // Поле для зміни ніку
+        // Change nickname input
         const nickInput = document.createElement("input");
+        nickInput.type = "text";
         nickInput.value = nick;
-        nickInput.style.marginLeft = "10px";
+        nickInput.title = "Change nickname";
         nickInput.onchange = () => changeNickname(nick, nickInput.value);
-        div.appendChild(nickInput);
+        controls.appendChild(nickInput);
 
-        // Поле для зміни пароля
+        // Change password input
         const passInput = document.createElement("input");
         passInput.type = "password";
         passInput.placeholder = "New password";
-        passInput.style.marginLeft = "5px";
+        passInput.title = "Change password";
         passInput.onchange = () => changePassword(nick, passInput.value);
-        div.appendChild(passInput);
+        controls.appendChild(passInput);
       }
 
+      div.appendChild(controls);
       container.appendChild(div);
     }
   }
 
-  // ---- Змінити ніки (проста логіка) ----
   function changeNickname(oldNick, newNick) {
     if (!newNick || newNick === oldNick || accounts[newNick]) {
       alert("Invalid or existing nickname");
@@ -158,13 +319,10 @@
     }
     accounts[newNick] = accounts[oldNick];
     delete accounts[oldNick];
-
-    // Також можна перенести історію у Firebase, якщо хочеш
-    // Але це складніше — поки просто оновлюємо локально
+    // Примітка: історія Firebase для старого ніку залишається — перенесення не реалізоване
     renderUsers();
   }
 
-  // ---- Змінити пароль ----
   function changePassword(nick, newPass) {
     if (!newPass) {
       alert("Password cannot be empty");
@@ -173,7 +331,6 @@
     accounts[nick].password = newPass;
   }
 
-  // ---- Відкрити історію користувача ----
   function openHistory(nick) {
     viewingUser = nick;
     document.getElementById("currentUserName").textContent = nick;
@@ -181,14 +338,12 @@
     loadHistory(nick);
   }
 
-  // ---- Додати "+" або "−" ----
   function addMark(mark) {
     if (!viewingUser) return;
     const timestamp = Date.now();
     db.ref('users/' + viewingUser + '/marks/' + timestamp).set(mark);
   }
 
-  // ---- Підвантажити історію з Firebase і оновити список ----
   function loadHistory(nick) {
     const historyList = document.getElementById("historyList");
     db.ref('users/' + nick + '/marks').on('value', snapshot => {
